@@ -253,10 +253,6 @@ size_t PASCAL OnRecvFrom(int socket, unsigned char* message, size_t length, int 
 {
 	unsigned char* origMessage = (unsigned char*)message;
 	size_t ret_length = 0;
-	if (block)
-	{
-		return ret_length;
-	}
 	SetCvarsValue();
 
 	//struct sockaddr_in *addr_in = (struct sockaddr_in *)dest_addr;
