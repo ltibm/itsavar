@@ -32,6 +32,8 @@
 *.app
 
 msvc/Release/*
+.vs/*
+Debug/*
 *.dll
 *.ipch
 *.tlog
