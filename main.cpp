@@ -61,6 +61,15 @@ bool isfinish = false;
 bool isloaded = false;
 bool block = false;
 int secure_type = 1;
+int userMsgId = -1;
+bool cvarvalue_enable_allowedip = true;
+double cvarvalue_cleartime = 10;
+bool cvarvalue_log = true;
+bool cvarvalue_log_packets = true;
+bool cvarvalue_warnserver = true;
+bool cvarvalue_warnplayers = true;
+bool cvarvalue_warnbannedpacket = true;
+bool cvarvalue_banpacketip = true;
 void OnMetaDetach()
 {
 	isfinish = true;
@@ -127,6 +136,7 @@ int OnMetaAttach()
 	
 		g_engfuncs.pfnServerCommand(c);
 		//g_engfuncs.pfnServerExecute();
+		//userMsgId = REG_USER_MSG("SayText", -1);
 	}
 	son_tarama_zamani = std::time(0);
 	return result;
@@ -191,7 +201,7 @@ void EngineFuncLoaded()
 	cvar_cleartime = RegisterCvar("itsavar_ip_cleartime", 10);
 	cvar_enabled_allowed = RegisterCvar("itsavar_enabled_allowed_ip", 1);
 
-	RegisterSVCvar("itsavar_version", 1.1f);
+	RegisterSVCvar("itsavar_version", 1.2f);
 	SetCvarsValue();
 
 
@@ -209,9 +219,14 @@ void SetCvarsValue()
 	ddoscontrolitem->check_single_flood = cvar_check_single->value;
 	ddoscontrolitem->check_total_flood = cvar_check_total->value;
 	secure_type = clampf(cvar_secure_type->value, 0, 2);
-
-
-
+	cvarvalue_enable_allowedip = cvar_enabled_allowed->value > 0;
+	cvarvalue_cleartime = cvar_cleartime->value;
+	cvarvalue_log = cvar_log->value > 0;
+	cvarvalue_log_packets = cvar_log_packets->value > 0;
+	cvarvalue_warnserver = cvar_warn_server->value > 0;
+	cvarvalue_warnplayers = cvar_warn_players->value > 0;
+	cvarvalue_warnbannedpacket = cvar_warn_bannedpacket->value > 0;
+	cvarvalue_banpacketip = cvar_ban_bannedpacketip->value > 0;
 	lastTime = time;
 
 }
@@ -252,19 +267,17 @@ cvar_t* RegisterCvar(char* cvar_name, float cvar_value)
 size_t PASCAL OnRecvFrom(int socket, unsigned char* message, size_t length, int flags, const struct sockaddr* dest_addr, socklen_t* dest_len)
 {
 	unsigned char* origMessage = (unsigned char*)message;
-	size_t ret_length = 0;
+	size_t ret_length = RecvFromOriginal(socket, message, length, flags, dest_addr, dest_len);
 	SetCvarsValue();
-
-	//struct sockaddr_in *addr_in = (struct sockaddr_in *)dest_addr;
-	ret_length = RecvFromOriginal(socket, message, length, flags, dest_addr, dest_len);
 	if (secure_type == 0 || !isloaded)
 	{
 		return ret_length;
 	}
+
 	if (ret_length <= 0) return ret_length;
 	struct sockaddr_in* addr_in = (struct sockaddr_in*)dest_addr;
 	char* iipaddrs = inet_ntoa(addr_in->sin_addr);
-	if (cvar_enabled_allowed->value)
+	if (cvarvalue_enable_allowedip)
 	{
 		for (size_t i = 0; i < allowedIp.size(); i++)
 		{
@@ -275,49 +288,44 @@ size_t PASCAL OnRecvFrom(int socket, unsigned char* message, size_t length, int 
 	{
 		return ret_length;
 	}
-
 	bool ipbanned = ddoscontrolitem->is_ipbanned(iipaddrs);
 	bool stopit = false;
 	bool checkit = false;
 	std::time_t now = std::time(0);
-
-	if (bannedpacket->is_match(origMessage, ret_length) && !ipbanned)
+	if (!ipbanned && bannedpacket->is_match(origMessage, ret_length))
 	{
-		char* iipaddrs = inet_ntoa(addr_in->sin_addr);
-		if (cvar_ban_bannedpacketip->value)
+		if (cvarvalue_banpacketip)
 		{
 			ddoscontrolitem->AddIPBan(iipaddrs);
 		}
-		if (cvar_warn_bannedpacket->value)
+		if (cvarvalue_warnbannedpacket)
 		{
 			double efark = difftime(now, son_banned_packtime);
-			if (cvar_ban_bannedpacketip->value || efark > 200)
+			if (cvarvalue_banpacketip || efark > 200)
 			{
-
 				char* chr = new char[255];
-				if (cvar_warn_server->value)
+				if (cvarvalue_warnserver)
 				{
 					printf("\n%s%s\n", PREFIX, MySettings->GetTextFmt("IP_PACKET_BLOCK", iipaddrs));
 				}
 				sprintf(chr, "%s%s", PREFIX, MySettings->GetTextFmt("IP_PACKET_BLOCK", iipaddrs));
-				if (cvar_log->value)
+				if (cvarvalue_log)
 				{
 					if (log_writer) log_writer->writelog(chr, TimeToString(&now, MySettings->DateFormat));
 				}
-				if (cvar_warn_players->value)
+				if (cvarvalue_warnplayers)
 				{
-
 					Client_PrintAll(chr);
 				}
 				delete chr;
-				totalblockedAttack++;
 			}
 		}
+		totalblockedAttack++;
 		son_banned_packtime = now;
 		stopit = true;
 	}
 	double efark = difftime(now, son_tarama_zamani);
-	if (efark >= cvar_cleartime->value)
+	if (efark >= cvarvalue_cleartime)
 	{
 		son_tarama_zamani = now;
 		ddoscontrolitem->clear_unactionip();
@@ -330,11 +338,8 @@ size_t PASCAL OnRecvFrom(int socket, unsigned char* message, size_t length, int 
 	{
 		checkit = true;
 	}
-
-
 	if (!stopit && checkit)
 	{
-		char* iipaddrs = inet_ntoa(addr_in->sin_addr);
 		if (ipbanned)
 		{
 			stopit = true;
@@ -342,11 +347,10 @@ size_t PASCAL OnRecvFrom(int socket, unsigned char* message, size_t length, int 
 		else
 		{
 			bannedreason banstatus = ddoscontrolitem->get_banstatus(iipaddrs, origMessage, ret_length);
-
 			if (banstatus != nobanned)
 			{
 				int stip = 0;
-				if (cvar_warn_server->value)
+				if (cvarvalue_warnserver)
 				{
 					if (banstatus == banned_allpacket)
 					{
@@ -363,11 +367,11 @@ size_t PASCAL OnRecvFrom(int socket, unsigned char* message, size_t length, int 
 				totalblockedAttack++;
 				char* chr = new char[255];
 				sprintf(chr, "%s%s", PREFIX, MySettings->GetTextFmt("IP_PACKET_BLOCK_DOUBT", stip, iipaddrs));
-				if (cvar_log->value)
+				if (cvarvalue_log)
 				{
 					if (log_writer) log_writer->writelog(chr, TimeToString(&now, MySettings->DateFormat));
 				}
-				if (cvar_log->value && cvar_log_packets->value)
+				if (cvarvalue_log && cvarvalue_log_packets)
 				{
 					if (stip == 1 && ret_length > 0)
 					{
@@ -389,7 +393,7 @@ size_t PASCAL OnRecvFrom(int socket, unsigned char* message, size_t length, int 
 					}
 				}
 
-				if (cvar_warn_players->value)
+				if (cvarvalue_warnplayers)
 				{
 					Client_PrintAll(chr);
 				}
@@ -402,10 +406,7 @@ size_t PASCAL OnRecvFrom(int socket, unsigned char* message, size_t length, int 
 
 	if (stopit)
 	{
-		for (size_t i = 0; i < 1; i++)
-		{
-			message[i] = 0;
-		}
+		memset(message, 0, 1);
 		return 1;
 	}
 	return ret_length;
@@ -492,7 +493,7 @@ void SVR_ItSavar()
 	}
 	else if (strcmpi(argv, "info") == 0)
 	{
-		printf("%s Anti DDOS %s: v1.1", PREFIX, MySettings->GetText("CMD_INFO_VERSION"));
+		printf("%s Anti DDOS %s: v1.2", PREFIX, MySettings->GetText("CMD_INFO_VERSION"));
 		printf("\n%s", MySettings->GetTextFmt("CMD_INFO_TOTAL_BLOCK", totalblockedAttack));
 		printf("\n%s", MySettings->GetTextFmt("CMD_INFO_CUR_BLOCK", ddoscontrolitem->BlockedIPCount()));
 
@@ -514,8 +515,6 @@ void PM_Move(playermove_t* pmove, int server)
 }
 const char* pfnGetPlayerAuthId(edict_t* e)
 {
-	/*if (e->v.flags & FL_FAKECLIENT)
-		RETURN_META_VALUE(MRES_SUPERCEDE, "STEAM_0:0:0000112");*/
 	RETURN_META_VALUE(MRES_IGNORED, NULL);
 }
 bool sv_activated = false;
@@ -526,9 +525,13 @@ void ServerDeactivate_Post()
 }
 void Client_PrintAll(char* Message)
 {
-	int gmsgidSayText = REG_USER_MSG("SayText", -1);
 
-	if (!gmsgidSayText) return;
+	//int gmsgidSayText = REG_USER_MSG("SayText", -1);
+	if (userMsgId <= 0)
+	{
+		userMsgId = GET_USER_MSG_ID(PLID, "SayText", 0);
+		if (userMsgId <= 0) return;
+	}
 	int mlen = strlen(Message);
 	for (int i = 1; i <= gpGlobals->maxClients; ++i)
 	{
@@ -536,8 +539,8 @@ void Client_PrintAll(char* Message)
 		edict_t* pPlayer = INDEXENT(i);
 		if (!IsValidPev(pPlayer))
 			continue;
-		gpEnginefuncInterface->pfnMessageBegin(MSG_ONE, gmsgidSayText, NULL, pPlayer);
-		gpEnginefuncInterface->pfnWriteByte(i);
+		gpEnginefuncInterface->pfnMessageBegin(MSG_ONE, userMsgId, NULL, pPlayer);
+		gpEnginefuncInterface->pfnWriteByte(0);
 		gpEnginefuncInterface->pfnWriteString(Message);
 		gpEnginefuncInterface->pfnMessageEnd();
 		/*	g_engfuncs.pfnClientPrintf(pPlayer, (PRINT_TYPE) 3, Message);*/
@@ -582,26 +585,6 @@ void AlertMessage(ALERT_TYPE atype, char* fmt, ...)
 bool checkActivation()
 {
 	return true;
-	/*FILE *fp;
-	fp = fopen("C:/isvr/lt_itsavar.key", "rt");
-
-	if (!fp)
-	{
-		return false;
-	}
-	wchar_t buf_t[256];
-	while (!feof(fp))
-	{
-		if (!fgetws(buf_t, sizeof(buf_t) - 1, fp)) break;
-		if (wcscmp(L"[Lt. It Savar] hain itler bu modulu kullanamaz. '=>´¯`·¸.Lt.¸.´¯`<='--24062019", buf_t) == 0)
-		{
-			fclose(fp);
-			return true;
-		}
-		break;
-	}
-	fclose(fp);
-	return false;*/
 }
 
 

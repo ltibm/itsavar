@@ -40,3 +40,4 @@ Debug/*
 *.pdb
 *.obj
 *.exp
+*.db

@@ -14,9 +14,9 @@
 
 plugin_info_t Plugin_info = {
 	META_INTERFACE_VERSION,
-	"ItSavar - AntiDDOS",
-	"1.1",
-	"15.06.2021",
+	"ItSavar-AntiDDOS",
+	"1.2",
+	"17.06.2021",
 	"Lt.",
 	"https://steamcommunity.com/id/ibmlt",
 	"Anti DDOS plugin",

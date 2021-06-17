@@ -18,7 +18,7 @@ bool ddoscontrol::is_ipbanned(char * ipaddr)
 	for (int i = 0; i < vsize; i++)
 	{
 		ddositem* di = this->ddosiplist[i];
-		if (di == NULL) continue;
+		if (!di) continue;
 		if (strcmpi(di->ip_address, ipaddr) == 0)
 		{
 			return di->is_banned;
