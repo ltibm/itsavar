@@ -1,0 +1,5 @@
+﻿  config.cpp
+d:\flash\metamod_test\config.cpp(2): fatal error C1083: içerme dosyası açılamıyor: 'packetcontroller.h': No such file or directory
+  main.cpp
+d:\flash\metamod_test\main.cpp(6): fatal error C1083: içerme dosyası açılamıyor: 'logwriter.h': No such file or directory
+  Kod Üretiliyor...
