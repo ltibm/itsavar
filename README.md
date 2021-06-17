@@ -8,7 +8,7 @@ Metamod https://github.com/Bots-United/metamod-p
 
 # Installation
 
-Download https://github.com/ltibm/It-Savar-Anti-DDos-Metamod-Plugin/releases/download/1.1/itsavar.zip
+Download https://github.com/ltibm/itsavar/releases/download/1.1/itsavar.zip
 
 Extract zip file to addons folder.
 
