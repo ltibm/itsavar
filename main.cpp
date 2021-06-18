@@ -11,7 +11,7 @@
 #define CONFIG_FILE "itsavar.ini"
 #define CFG_FILE  "itsavar.cfg"
 #define IsValidPev(pEntity) (!FNullEnt(pEntity) && pEntity->pvPrivateData)  
-#define PREFIX "[Lt. ItSavar] "
+#define PREFIX "[ItSavar] "
 
 std::vector<char*> allowedIp;
 Settings* MySettings = new Settings();
@@ -201,7 +201,7 @@ void EngineFuncLoaded()
 	cvar_cleartime = RegisterCvar("itsavar_ip_cleartime", 10);
 	cvar_enabled_allowed = RegisterCvar("itsavar_enabled_allowed_ip", 1);
 
-	RegisterSVCvar("itsavar_version", 1.2f);
+	RegisterSVCvar("itsavar_version", 1.21f);
 	SetCvarsValue();
 
 
@@ -493,7 +493,7 @@ void SVR_ItSavar()
 	}
 	else if (strcmpi(argv, "info") == 0)
 	{
-		printf("%s Anti DDOS %s: v1.2", PREFIX, MySettings->GetText("CMD_INFO_VERSION"));
+		printf("%s Anti DDOS %s: v1.2.1", PREFIX, MySettings->GetText("CMD_INFO_VERSION"));
 		printf("\n%s", MySettings->GetTextFmt("CMD_INFO_TOTAL_BLOCK", totalblockedAttack));
 		printf("\n%s", MySettings->GetTextFmt("CMD_INFO_CUR_BLOCK", ddoscontrolitem->BlockedIPCount()));
 
@@ -734,6 +734,7 @@ static int parse_config()
 	controlpacket->i_size = ParseBlocks(controlpacket->bList, controlloc);
 	char* allowFN = new char[256];
 	sprintf(allowFN, "%s%s", mPluginPath, "allowedip.ini");
+	allowedIp.clear();
 	ParseLines(allowedIp, allowFN);
 
 	printf("\n%s", MySettings->GetTextFmt("CMD_INFO_ALLOWED_IPCOUNT", allowedIp.size()));

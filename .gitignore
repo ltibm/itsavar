@@ -41,3 +41,8 @@ Debug/*
 *.obj
 *.exp
 *.db
+msvc/.vs/itsavar/v16/Browse.VC.opendb
+msvc/.vs/itsavar/v16/Browse.VC.db-wal
+msvc/.vs/itsavar/v16/Browse.VC.db-shm
+msvc/.vs/itsavar/v16/.suo
+msvc/.vs/itsavar/v16/.suo
