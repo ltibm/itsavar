@@ -8,7 +8,7 @@ Metamod https://github.com/Bots-United/metamod-p
 
 # Installation
 
-Download https://github.com/ltibm/itsavar/releases/download/1.2/itsavar.zip
+Download https://github.com/ltibm/itsavar/releases/download/1.2.1/itsavar.zip
 
 Extract zip file to addons folder.
 
